@@ -1,0 +1,322 @@
+import sys    # 시스템
+import os     # 시스템
+
+import pandas as pd    # 판다스 : 데이터분석 라이브러리
+import numpy as np     # 넘파이 : 숫자, 행렬 데이터 라이브러리
+import datetime
+from selenium.webdriver.common.keys import Keys
+import urllib.request
+from bs4 import BeautifulSoup     # html 데이터 전처리
+from selenium import webdriver    # 웹 브라우저 자동화
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+import time                       # 시간 지연
+from tqdm import tqdm_notebook    # 진행상황 표시
+from tqdm.notebook import tqdm
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
+from selenium.webdriver.support.ui import WebDriverWait 
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
+from konlpy.tag import Okt 
+import requests
+import json
+# python 버전 확인
+# !python --version
+
+# 판다스 버전 확인
+# pd.__version__
+
+
+# 크롬 웹브라우저 실행
+driver = webdriver.Chrome(ChromeDriverManager().install())
+
+
+# 사이트 주소
+driver.get("https://www.classu.co.kr/new/category?categoryId=%EC%9E%AC%ED%85%8C%ED%81%AC")
+time.sleep(2)
+
+def scroll_down(driver):
+    driver.execute_script("window.scrollTo(0, 7200)")
+    time.sleep(1)
+
+
+def doScrollDown(whileSeconds):
+        start = datetime.datetime.now()
+        end = start + datetime.timedelta(seconds=whileSeconds)
+        while True:
+            driver.execute_script("window.scrollTo(0, 800)")
+            time.sleep(1)
+            driver.execute_script("window.scrollTo(800, 1300)")
+            time.sleep(1)
+            if datetime.datetime.now() > end:
+                break
+def find_longest_word(words):
+	word_len = []
+	for n in words:
+		word_len.append((len(n), n))
+	word_len.sort()
+	return word_len[-1][1]
+
+
+platform_class = "클래스U"
+category = "1"
+category_id = []
+platform_name = []
+url = []
+name = []
+price = []
+img = []
+instructor_name = []
+noun_list = []
+content = []
+curPage = 1
+totalPage = 1
+number = 1 
+watch_time = []
+end_time = []
+id_list = []
+
+
+
+
+
+
+
+driver.set_window_size(1920, 1080) 
+
+doScrollDown(1)
+
+article_title = driver.find_elements_by_css_selector("p.ColumnItem__Title-sc-1ozan2x-4.gmjxSH")
+article_title[0]
+
+for article in article_title:
+    title = article.text
+    name.append(title)
+    
+
+    
+    detail = platform_class  + " " +title
+    content.append(detail)
+        
+    watch_time1 = 0
+    watch_time.append(watch_time1)
+        
+    end_time1 = "none" 
+    end_time.append(end_time1)    
+        
+    category_id.append(category)
+        
+    platform_name.append(platform_class)
+
+    okt = Okt()       
+    noun = okt.nouns(title)
+    find_noun =  find_longest_word(noun)       
+    noun_list.append(find_noun)
+    
+    
+    
+time.sleep(1)
+
+article_name = driver.find_elements_by_css_selector("span.ColumnItem__Coach-sc-1ozan2x-6.fnbFYo")
+article_name[0]
+
+for article in article_name:
+    name_ins = article.text
+    instructor_name.append(name_ins)
+
+    
+    
+article_url = driver.find_elements_by_css_selector("li.ClassRowList__ListItem-sc-8vyk7a-1.kSkJOw")
+
+article_url[0]
+
+
+for article in article_url:
+    url_class = article.get_attribute('title')   
+    url_class_u = "https://www.classu.co.kr/class/classDetail/" + url_class
+    url.append(url_class_u)  
+
+
+time.sleep(1)
+
+
+article_main_price =  driver.find_elements_by_css_selector("div.ColumnItem__Price-sc-1ozan2x-8.fLfrUp")
+
+for article in article_main_price:
+                price_class = article.text
+                price.append(price_class)
+"""
+for i in article_main_price:
+        try :
+            price = i.find_element_by_class_name("ColumnItem__SalePer-sc-1ozan2x-9 bvILDz").text
+            price_list.append(price)
+        except:
+            price = i.find_element_by_class_name("ColumnItem__SalePrice-sc-1ozan2x-10 htpQKT").text
+            price_list.append(price)    
+time.sleep(1)
+
+"""
+
+
+
+time.sleep(1)
+
+
+
+article_img =  driver.find_elements_by_xpath("//div[@class='ColumnItem__Item-sc-1ozan2x-0 jGgfTr']/div[@class='ClassCover__Layout-sc-7tkfmq-0 iJUaiv']/div") 
+article_img[0]
+address = "C:\py_temp\img"
+
+for article in article_img :
+    try : 
+            img_class = article.get_attribute('src')   
+            img.append(img_class)                               
+    except: 
+            pass
+    continue
+
+driver.close()   
+
+print("url개수: ", len(url))
+
+df3 = pd.DataFrame({'img' : img})
+
+df3.to_excel("class3.xlsx")  
+time.sleep(2)
+
+load = pd.read_excel("class3.xlsx")
+
+num_list = len(load)
+
+number = num_list    # 수집할 글 갯수
+
+
+
+
+address = "C:\py_temp"
+# 수집한 url 돌면서 데이터 수집
+
+for i in tqdm_notebook(range(0, 30)):
+    # 글 띄우기
+        img = load ["img"][i]
+        urllib.request.urlretrieve(img,address+"/"+str(i)+'.jpg') 
+
+
+import os
+import glob
+import json
+from PIL import Image
+
+files = glob.glob('C:\py_temp/*.jpg')
+
+s = requests.Session()
+s.mount('http://demo-257674007.ap-northeast-2.elb.amazonaws.com', HTTPAdapter(max_retries=5))
+
+for i in files:
+    img = Image.open(i)
+    img_resize = img.resize((int(img.width / 2), int(img.height / 2)))
+    title, ext = os.path.splitext(i)
+    im = img_resize.convert("RGB")
+    im.save(title + '_half' + ext)
+
+loginUrl = 'http://demo-257674007.ap-northeast-2.elb.amazonaws.com/api/login'
+payload = {"email":"class101@gmail.com" ,"password":"123123123"}
+
+r = requests.post(
+    loginUrl, data=json.dumps(payload),
+    headers={'Content-Type': 'application/json'}
+    )
+token = json.loads(json.dumps(r.json()))['token']
+
+print(token)
+
+imageUrl = 'http://demo-257674007.ap-northeast-2.elb.amazonaws.com/api/uploadThumbNail'
+    
+createUrl = 'http://demo-257674007.ap-northeast-2.elb.amazonaws.com/api/uploadLecture'
+    
+subUrl = 'http://demo-257674007.ap-northeast-2.elb.amazonaws.com/api/uploadSubCategory'   
+    
+for i in range(30): 
+    
+        file_name = str(i) + '_half.jpg'
+
+        with open(file_name, 'rb') as img:
+
+            name_img= os.path.basename(file_name)
+
+            files= {'upload': (name_img,img,'multipart/form-data')}
+
+            headers = {'Accept': '*/*','Authorization': 'Bearer ' + token}
+
+            with requests.Session() as s:
+                r = s.post(imageUrl,files=files,headers=headers,verify=False)
+                print(r.json())
+                id = json.loads(json.dumps(r.json()))['id']
+                print(id)
+                idlist = id
+                id_list.append(idlist)
+            
+        i = i + 1   
+    
+dict_list = []
+
+for i in range(30):
+    dict_list.append({'name':name[i], 'instructor_name':instructor_name[i], 'content':content[i], 'category_id':9,'file_id':id_list[i],'platform_name': [platform_name[i]],'price': [price[i]],'url': [url[i]], 'watch_time': [0]})
+
+for i in files:
+        with open("dict_list.json", "w", encoding='UTF-8-sig') as f:
+
+            json.dump(dict_list,f,indent=4,ensure_ascii=False)
+ 
+        with open('dict_list.json', 'rt',encoding= "UTF-8-sig") as s:
+            headers = {'Accept': '*/*','Content-Type': 'application/json','Authorization': 'Bearer ' + token}
+            print(token)
+            datas1 = json.load(s)
+            
+            for n in datas1:
+                datas = n
+                print(datas)
+                
+    
+                with requests.Session() as s: 
+                    r = s.post(createUrl,json = datas, headers=headers,verify=False)
+                    print(r.json())
+                    id = json.loads(json.dumps(r.json()))['id']
+                    print(id)
+                    time.sleep(3)
+                    
+time.sleep(10)            
+            
+noun_list3 = []                    
+                    
+q = 0                    
+for i in range(30):
+    noun_list3.append({'name':noun_list[i],'category_id':9})   
+    
+
+with open("noun_list3.json", "w", encoding='UTF-8-sig') as f:
+
+    json.dump(noun_list3,f,indent=4,ensure_ascii=False)
+
+with open('noun_list3.json', 'rt',encoding= "UTF-8-sig") as s:
+        
+            headers = {'Accept': '*/*','Content-Type': 'application/json','Authorization': 'Bearer ' + token}
+            
+            print(token)
+            datas1 = json.load(s)
+            
+            for n in datas1:
+                datas = n
+                print(datas)
+                
+                with requests.Session() as s: 
+                    r = s.post(subUrl,json = datas, headers=headers)
+                    print('finish')
+                    print(q)
+                    q = q + 1
+                    time.sleep(3)
+                    
+noun_list.clear()                    
+noun_list3.clear()
+             
